@@ -24,9 +24,9 @@ for t in time:
         v.append(5.19 * t)
         h.append((1 / 2) * 5.19 * t**2)
     else:
-        t = t - 5
-        v.append(25.95 - g * t)
-        h.append(64.875 + 25.95 * t - (1 / 2) * g * t**2)
+        tau = t - 5
+        v.append(25.95 - g * tau)
+        h.append(64.875 + 25.95 * tau - (1 / 2) * g * tau**2)
 
 # Forward Euler
 for t in range(len(time) - 1):
@@ -39,8 +39,11 @@ for t in range(len(time) - 1):
 # Here, mean relative error, not the best metric as it doesn't take into account 
 # major errors.
 # Best would be peak error to show
-error_height = abs(np.nanmean((np.array(h) - np.array(h_euler))/np.array(h)))*100
-error_speed = abs(np.nanmean((np.array(v) - np.array(v_euler))/np.array(v)))*100
+mae_height = abs(np.nanmean((np.array(h) - np.array(h_euler))/np.array(h)))*100
+mae_speed = abs(np.nanmean((np.array(v) - np.array(v_euler))/np.array(v)))*100
+nmaxae_height = np.max(abs(np.array(h) - np.array(h_euler)))/np.max(abs(np.array(h)))*100
+nmaxae_speed = np.max(abs(np.array(h) - np.array(h_euler)))/np.max(abs(np.array(h)))*100
+
 
 fig, ax = plt.subplots(2, 1, figsize=(10, 6), sharex=True, tight_layout=True, dpi=100)
 ax[0].plot(time, v, color="red", lw=2, label="Speed Analytical")
@@ -51,7 +54,7 @@ ax[0].set_ylabel("Speed")
 ax[0].legend(loc="upper left")
 ax[0].text(
     0.95, 0.08,
-    f"Error: {error_height:.3f}%",
+    f"Error: {mae_height:.3f}%\nNMaxAE: {nmaxae_height:.3f}%",
     transform=ax[0].transAxes,
     ha="right", va="bottom",
     bbox=dict(boxstyle="round", fc="white", alpha=0.7)
@@ -63,6 +66,15 @@ ax[1].plot(time, h_euler, color="blue", lw=1, ls="--", label="Height Euler")
 
 ax[1].set_xlabel("Time (s)")
 ax[1].set_ylabel("Height")
+ax[1].set_ylim(bottom=0)
 ax[1].legend(loc="upper left")
-mplcursors.cursor(hover=True)
+ax[1].text(
+    0.95, 0.08,
+    f"MAE: {mae_speed:.3f}%\nNMaxAE: {nmaxae_speed:.3f}%",
+    transform=ax[1].transAxes,
+    ha="right", va="bottom",
+    bbox=dict(boxstyle="round", fc="white", alpha=0.7)
+)
+
+# mplcursors.cursor(hover=True)
 plt.show()
