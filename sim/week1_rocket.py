@@ -1,9 +1,5 @@
-from ast import List
-from functools import total_ordering
-import math
 import numpy as np
 import matplotlib.pyplot as plt
-import mplcursors
 
 T = 15  # Newton
 cutoff_t = 5  # cutoff time
@@ -11,7 +7,7 @@ m = 1  # kilogram
 g = 9.81  # m/s²
 tot_time = 15  # seconds
 dt = 1e-3
-time = np.linspace(0, tot_time, int(tot_time / dt))
+time = np.linspace(0, tot_time, int(tot_time / dt), retstep=False)
 print(len(time))
 h = []
 v = []

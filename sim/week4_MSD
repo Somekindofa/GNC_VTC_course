@@ -1,0 +1,80 @@
+from math import exp, sqrt
+import matplotlib.pyplot as plt
+from matplotlib.widgets import Slider, Button
+import numpy as np
+
+dt = 1e-2  # sampling period (s)
+T = 10
+t = np.linspace(0, T, int(T / dt))
+
+# Initial conditions
+position = 5  # meters
+velocity = 0  # m/s
+
+# Default parameters
+m = 1    # kg
+k = 2.5  # N/m
+b = 1    # N·s/m
+
+
+def msd(t_array, b, k):
+    zeta = b / (2 * sqrt(k * m))
+    omega = sqrt(k / m)
+    w_d = omega*sqrt(1-zeta**2)
+    positions = []
+
+    for t in t_array:
+        pos = 5*exp(-zeta*omega*t)*(np.cos(w_d*t) + zeta*omega/w_d*np.sin(w_d*t))
+        positions.append(pos)
+
+    return positions, zeta, omega
+
+
+# --- Figure setup ---
+fig, ax = plt.subplots()
+fig.subplots_adjust(left=0.25, bottom=0.25)
+
+positions0, zeta0, omega0 = msd(t, b, k)
+line, = ax.plot(t, positions0, lw=2)
+ax.set_xlabel('Time [s]')
+ax.set_ylabel('Position [m]')
+
+info_text = ax.text(
+    0.02, 0.95,
+    f"$\\zeta$ = {zeta0:.3f}\n$\\omega$ = {omega0:.3f} rad/s",
+    transform=ax.transAxes,
+    verticalalignment='top',
+    fontfamily='monospace',
+)
+
+# --- Sliders ---
+axb = fig.add_axes((0.25, 0.1, 0.65, 0.03))
+b_slider = Slider(ax=axb, label='Damping b', valmin=0.01, valmax=10, valinit=b, valstep=0.01)
+
+axk = fig.add_axes((0.1, 0.25, 0.0225, 0.63))
+k_slider = Slider(ax=axk, label='Stiffness k', valmin=0.01, valmax=10, valinit=k, orientation="vertical", valstep=0.01)
+
+
+def update(_):
+    positions, zeta, omega = msd(t, b_slider.val, k_slider.val)
+    line.set_ydata(positions)
+    info_text.set_text(f"$\\zeta$ = {zeta:.3f}\n$\\omega$ = {omega:.3f} rad/s")
+    fig.canvas.draw_idle()
+
+
+b_slider.on_changed(update)
+k_slider.on_changed(update)
+
+# --- Reset button ---
+resetax = fig.add_axes((0.8, 0.025, 0.1, 0.04))
+button = Button(resetax, 'Reset', hovercolor='0.975')
+
+
+def reset(_):
+    b_slider.reset()
+    k_slider.reset()
+
+
+button.on_clicked(reset)
+
+plt.show()
