@@ -154,6 +154,51 @@ $$x(t) = x_0\,e^{-\zeta\omega_n t}\!\left(\cos(\omega_d t) + \frac{\zeta\omega_n
 
 ---
 
+# MSD ODE with Transfer Function
+
+From the MSD EOM:
+$$m\ddot{x} + kx + b\dot{x} =  F(t)$$
+
+replacing the solution with $e^{st}$ we get:
+$$(ms^2 + cs + k) X(s) = F(s)$$
+
+which leads to the **tranfer function** $H(s) = \frac{X(s)}{F(s)}$:
+$$H(s) = \frac{1}{ms^2 + cs + k}$$
+
+### Pole locations
+
+The poles are the roots of the denominator $ms^2 + bs + k = 0$, i.e. the values of $s$ for which $H(s)$ blows up. Applying the quadratic formula:
+
+$$s_{1,2} = \frac{-b \pm \sqrt{b^2 - 4mk}}{2m}$$
+
+Rewriting in terms of $\zeta$ and $\omega_n$:
+
+**Underdamped** ($\zeta < 1$): complex conjugate pair, system oscillates.
+$$s_{1,2} = -\zeta\omega_n \pm j\,\omega_n\sqrt{1 - \zeta^2}$$
+
+**Critically damped** ($\zeta = 1$): repeated real root, fastest return without overshoot.
+$$s_{1,2} = -\omega_n \quad \text{(repeated)}$$
+
+**Overdamped** ($\zeta > 1$): two distinct negative real roots, no oscillation.
+$$s_{1,2} = -\zeta\omega_n \pm \omega_n\sqrt{\zeta^2 - 1}$$
+
+---
+
+### Pole location cheat sheet
+
+Every qualitative behaviour of the system is encoded in where the pole sits in the complex plane. Writing $s = \sigma + j\omega_d$:
+
+| Property | What it controls | Formula |
+|---|---|---|
+| Real part $\sigma$ | Decay rate and stability | $\sigma = -\zeta\omega_n$ |
+| Imaginary part $\omega_d$ | Oscillation frequency | $\omega_d = \omega_n\sqrt{1-\zeta^2}$ |
+| Distance from origin | Natural frequency | $\lvert s \rvert = \omega_n$ |
+| Angle from negative real axis | Damping ratio | $\cos\theta = \zeta$ |
+
+Stability rule: if $\sigma < 0$ (left half-plane), the system is stable. If $\sigma > 0$ (right half-plane), the system is unstable. The MSD always has $\sigma < 0$ because $\zeta > 0$ and $\omega_n > 0$ by construction.
+
+
+---
 ## 7. Stability
 
 The real part of every root is $\sigma = -\zeta\omega_n$. Since $\zeta > 0$ and $\omega_n > 0$ for any physical spring-damper system, $\sigma$ is always negative, meaning $e^{\sigma t} \to 0$ as $t \to \infty$: the MSD always returns to equilibrium.
@@ -177,3 +222,50 @@ Looking at the interactive widget, increasing $k$ can look as if it damps the sy
 ## 9. Why this matters for GNC
 
 Every linear system in Phases 2 through 5 is the MSD wearing a different costume. A PID-controlled gimbal axis is a second-order system with poles at $s_{1,2}$, and tuning the gains is equivalent to placing those poles in the complex plane. An LQR-stabilised pitch axis has eigenvalues of the closed-loop matrix $A - BK$ that obey the same stability rule. A Kalman filter propagates state uncertainty through a matrix exponential that is the direct generalisation of $e^{st}$. The language built here, poles, decay rate, oscillation frequency, stability from the sign of the real part, is the language of everything that follows.
+
+---
+
+## 10. Bode plot interpretation
+
+The Bode plot answers one question: if I drive this system with a pure sinusoid $F(t) = A\sin(\omega t)$, what comes out?
+
+The answer is $x(t) = A\lvert H(j\omega)\rvert \sin(\omega t + \angle H(j\omega))$. The two subplots give you both factors simultaneously for every frequency $\omega$.
+
+**Magnitude plot.** Evaluating $H$ on the imaginary axis $s = j\omega$:
+
+$$H(j\omega) = \frac{1}{(k - m\omega^2) + jb\omega}$$
+
+At low frequencies ($\omega \to 0$): the denominator approaches $k$, so $\lvert H \rvert \approx 1/k$, a constant. This is the flat region on the left. The system behaves like a static spring.
+
+Near $\omega_n$: the real part of the denominator $(k - m\omega^2)$ shrinks toward zero, so the denominator is small and $\lvert H \rvert$ peaks. This is the resonance. A lightly damped system ($\zeta \ll 1$) produces a sharp, tall peak; a heavily damped system produces a broad, flat hump.
+
+At high frequencies ($\omega \to \infty$): the $-m\omega^2$ term dominates, giving $\lvert H(j\omega)\rvert \sim 1/(m\omega^2)$. In decibels: $20\log_{10}(1/\omega^2) = -40\log_{10}(\omega)$, which is a slope of $-40$ dB per decade. Each pole contributes $-20$ dB/decade; two poles give $-40$ dB/decade.
+
+**Phase plot.** The phase of $H(j\omega)$ is minus the phase of its denominator. Three key frequencies:
+
+- $\omega \to 0$: denominator is $k > 0$, a positive real number. Phase of $H$ is $0°$.
+- $\omega = \omega_n$: denominator is $jb\omega_n$, purely imaginary. Phase of $H$ is $-90°$.
+- $\omega \to \infty$: denominator is dominated by $-m\omega^2 < 0$, a negative real number. Phase of $H$ is $-180°$.
+
+The $-90°$ crossing at $\omega_n$ is not a coincidence: it is exactly where $k - m\omega^2 = 0$, leaving only the imaginary damping term. This makes $\omega_n$ directly readable off the phase plot without needing to find the magnitude peak.
+
+### Illustration 1: annotated Bode plot
+
+![alt text](bode_plot.png)
+
+---
+
+### Illustration 2: pole-zero plot
+
+![alt text](pole_zero.png)
+
+---
+
+## 11. What the Bode plot is for
+
+On its own, the Bode plot of an open-loop plant is descriptive, not prescriptive. Its engineering value appears when you close a feedback loop. The open-loop transfer function of the combined controller-plus-plant is $L(s) = C(s) \cdot P(s)$. The Bode plot of $L(s)$ gives two numbers directly:
+
+- **Phase margin**: how many additional degrees of phase lag the loop can tolerate before going unstable. Read at the frequency where $\lvert L(j\omega) \rvert = 1$ (0 dB crossover). A healthy design has $\geq 45°$.
+- **Gain margin**: how much additional gain the loop can accept before going unstable. Read at the frequency where $\angle L(j\omega) = -180°$. A healthy design has $\geq 6$ dB.
+
+For the TVC rig: the plant has an open-loop unstable pole in the right half-plane (the inverted pendulum instability). Any controller must provide enough gain at that pole's frequency to stabilise the loop, while maintaining sufficient phase margin at the crossover frequency. The Bode plot is the tool that tells you whether your design achieves both simultaneously.
