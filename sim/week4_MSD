@@ -15,11 +15,11 @@ velocity = 0  # m/s
 m = 1    # kg
 k = 2.5  # N/m
 b = 1    # N·s/m
+zeta = b / (2 * sqrt(k * m))
+omega = sqrt(k / m)
 
 
 def msd(t_array, b, k):
-    zeta = b / (2 * sqrt(k * m))
-    omega = sqrt(k / m)
     w_d = omega*sqrt(1-zeta**2)
     positions = []
 
@@ -31,18 +31,18 @@ def msd(t_array, b, k):
 
 
 # --- Figure setup ---
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(2, 1)
 fig.subplots_adjust(left=0.25, bottom=0.25)
 
 positions0, zeta0, omega0 = msd(t, b, k)
-line, = ax.plot(t, positions0, lw=2)
-ax.set_xlabel('Time [s]')
-ax.set_ylabel('Position [m]')
+line, = ax[0].plot(t, positions0, lw=2)
+ax[0].set_xlabel('Time [s]')
+ax[0].set_ylabel('Position [m]')
 
-info_text = ax.text(
+info_text = ax[0].text(
     0.02, 0.95,
     f"$\\zeta$ = {zeta0:.3f}\n$\\omega$ = {omega0:.3f} rad/s",
-    transform=ax.transAxes,
+    transform=ax[0].transAxes,
     verticalalignment='top',
     fontfamily='monospace',
 )
@@ -76,5 +76,28 @@ def reset(_):
 
 
 button.on_clicked(reset)
+import control
+sys = control.tf([1], [m, b, k])
+
+fig2, ax2 = plt.subplots()
+control.pole_zero_plot(sys)
+ax2.axvline(x=0, color='black', linestyle='-', label='Im')
+ax2.axhline(y=0, color='black', linestyle='-', label='Re')
+plt.xlabel('Re') 
+plt.ylabel('Im')
+
+poles = control.poles(sys)
+for p in poles:
+    ax2.plot([0, np.real(p)], [0, np.imag(p)], 'r--')
+    ax2.text(np.real(p)/2, np.imag(p)/2 + 0.1, '$\\omega_n$', color='red')
+
+
+control.bode_plot(sys, dB=True)
+axes = plt.gcf().axes
+axes[0].axvline(x=omega, color='red', linestyle='--', label='$\\omega_n$')
+axes[1].axvline(x=omega, color='red', linestyle='--')
+axes[0].legend()
+
+
 
 plt.show()
